@@ -1,0 +1,5 @@
+{
+  "name": "ImageEdi (Gemini)",
+  "description": "A sleek, AI-powered image editor using Gemini Nano Banana (Flash Image). Chat to edit, generate, and transform images with reference support.",
+  "requestFramePermissions": []
+}
