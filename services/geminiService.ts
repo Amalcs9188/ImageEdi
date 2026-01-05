@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { stripBase64Prefix, getMimeTypeFromBase64 } from '../utils';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 // Using the 'nano banana' model as requested for image tasks
 const MODEL_NAME = 'gemini-2.5-flash-image';
@@ -23,6 +23,7 @@ export const generateContent = async ({
   referenceImage
 }: GenerateParams): Promise<GenerateResult> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const parts: any[] = [];
 
     // 1. Add current main image if it exists (Context for editing)

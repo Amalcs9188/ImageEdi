@@ -3,7 +3,7 @@ import { CanvasViewer } from './components/CanvasViewer';
 import { ChatInterface } from './components/ChatInterface';
 import { generateContent } from './services/geminiService';
 import { Message } from './types';
-import { nanoid } from 'nanoid';
+
 import { Download, Share2, Trash2 } from 'lucide-react';
 import { Button } from './components/Button';
 
@@ -34,12 +34,16 @@ function App() {
 
     try {
       // 2. Call Gemini
-      // If we have a current image, we send it for editing.
-      // If not, we just send the text (and reference if any) for generation.
+      // If a reference image is attached in chat, treat it as the primary subject for editing.
+      // Otherwise, use the current canvas image.
+      const sourceImage = referenceImage || currentImage;
+
       const result = await generateContent({
         prompt: text,
-        currentImage: currentImage || undefined,
-        referenceImage: referenceImage
+        currentImage: sourceImage || undefined,
+        // If we heavily prioritized the reference image as source, we don't pass it as a secondary reference
+        // unless we strictly want 2-image input. For now, we assume "one subject".
+        referenceImage: undefined 
       });
 
       // 3. Handle Result

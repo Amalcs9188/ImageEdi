@@ -3,6 +3,7 @@ import { Send, Image as ImageIcon, X, Paperclip, MessageSquare, ChevronDown, Che
 import { Message } from '../types';
 import { Button } from './Button';
 import { fileToBase64 } from '../utils';
+import { QuickActionsToolbar } from './QuickActionsToolbar';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -175,62 +176,82 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Reference Image Preview Area (Attached but not sent) */}
-        {referenceImage && (
-          <div className="px-4 py-2 bg-surface-highlight/50 border-t border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <img src={referenceImage} alt="Ref" className="w-8 h-8 rounded object-cover border border-border" />
-              <span className="text-xs text-text-muted">Reference attached</span>
-            </div>
-            <button 
-              onClick={() => setReferenceImage(null)}
-              className="p-1 hover:bg-border rounded-full text-text-muted hover:text-text"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Input Area */}
-        <form onSubmit={handleSubmit} className="p-3 bg-surface border-t border-border">
-          <div className="flex gap-2">
-            <input 
-              type="file" 
-              ref={referenceInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={handleReferenceUpload}
-            />
-            <Button 
-              type="button" 
-              variant="secondary" 
-              className="px-2.5" 
-              onClick={() => referenceInputRef.current?.click()}
-              title="Attach Reference Image"
-            >
-              <Paperclip className="w-4 h-4" />
-            </Button>
-            
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask to edit or generate..."
-                className="w-full h-full bg-surface-highlight border border-border rounded-lg pl-3 pr-10 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-primary-light focus:ring-1 focus:ring-primary-light transition-all"
-                disabled={isLoading}
+        {/* Footer Area */}
+        <div className="flex flex-col shrink-0 bg-surface border-t border-border">
+          {/* Contextual Top Area */}
+          {referenceImage ? (
+            <div className="flex flex-col">
+              {/* Reference Header */}
+              <div className="px-3 py-2 bg-surface-highlight/30 flex items-center justify-between border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <img src={referenceImage} alt="Ref" className="w-10 h-10 rounded object-cover border border-border" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-text">Reference Image</span>
+                    <span className="text-[10px] text-text-muted">Will be used as structure</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setReferenceImage(null)}
+                  className="p-1 hover:bg-surface rounded-full text-text-muted hover:text-text transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Quick Actions for Ref */}
+              <QuickActionsToolbar 
+                onActionSelect={(prompt) => onSendMessage(prompt, referenceImage || undefined)} 
+                disabled={isLoading} 
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              disabled={isLoading || (!inputValue.trim() && !referenceImage)}
-              className="px-3"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
+          ) : (
+            /* Quick Actions for Standard */
+            <QuickActionsToolbar 
+              onActionSelect={(prompt) => onSendMessage(prompt, referenceImage || undefined)} 
+              disabled={isLoading} 
+            />
+          )}
+
+          {/* Input Form */}
+          <form onSubmit={handleSubmit} className="p-3 pt-0">
+            <div className="flex gap-2">
+              <input 
+                type="file" 
+                ref={referenceInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleReferenceUpload}
+              />
+              <Button 
+                type="button" 
+                variant="secondary" 
+                className="px-2.5" 
+                onClick={() => referenceInputRef.current?.click()}
+                title="Attach Reference Image"
+              >
+                <Paperclip className="w-4 h-4" />
+              </Button>
+              
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder="Ask to edit or generate..."
+                  className="w-full h-full bg-surface-highlight border border-border rounded-lg pl-3 pr-10 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-primary-light focus:ring-1 focus:ring-primary-light transition-all"
+                  disabled={isLoading}
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                disabled={isLoading || (!inputValue.trim() && !referenceImage)}
+                className="px-3"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
