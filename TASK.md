@@ -3,34 +3,28 @@
 ## Objective
 Enhance the user experience by adding a "Quick Actions" toolbar to the chat interface. This toolbar will provide users with one-click access to common image editing prompts, making it easier to discover capabilities and get quick results.
 
-## Context
-The application is a React-based image editor powered by Gemini. The `ChatInterface` component currently handles user input. We want to insert a new component just above the input area that displays a list of clickable action chips.
-
 ## Requirements
 
-### 1. Create `QuickActions` Component
-**File:** Create a new file `src/components/QuickActions.tsx`.
+### 1. Component Architecture
+Create a new, reusable component for the toolbar. It should be designed to handle a list of actions and emit an event when one is selected.
 
-**UI Design:**
--   **Layout:** A horizontal list of buttons.
--   **Styling:** 
-    -   Use a "chip" or "pill" style (rounded-full).
-    -   Background: `bg-surface-elevated` or `bg-surface-highlight`.
-    -   Text: `text-xs` or `text-sm`, `text-text-muted` (hovering should make it `text-text`).
-    -   Border: `border border-border`.
-    -   Hover Effect: Slight background change (e.g., `hover:bg-primary/10` or `hover:border-primary-light`).
--   **Responsiveness:** If the chips overflow, the container should be scrollable horizontally (`overflow-x-auto`) with the scrollbar hidden (`scrollbar-hide`).
+### 2. User Interface (UI)
+*   **Layout:** Display a horizontal list of buttons.
+*   **Style:** match the application's current "Dark Mode" aesthetic.
+    *   Use a "chip" or "pill" style (rounded).
+    *   Ensure appropriate hover states and feedback.
+*   **Responsiveness:** The toolbar must handle overflow gracefully (e.g., horizontal scrolling) if the actions exceed the container width.
 
-**Props Interface:**
-```typescript
-interface QuickActionsProps {
-  onAction: (prompt: string) => void;
-  disabled?: boolean;
-}
-```
+### 3. Functionality
+*   The component should render a set of predefined actions.
+*   Clicking an action should immediately trigger the chat message submission with a specific prompt.
+*   The actions should be disabled if the application is currently processing a request.
 
-### 2. Define Actions
-Inside the component, define the following list of actions. Each action has a short `label` (for the button) and a longer `prompt` (to be sent to the AI).
+### 4. Integration
+Integrate this new component into the existing Chat Interface. It should be positioned for easy access, ideally just above the text input area.
+
+## Defined Actions
+Implement the following actions. Each action has a label (displayed on the button) and a corresponding prompt (sent to the AI).
 
 | Label | Prompt to Pass |
 | :--- | :--- |
@@ -40,25 +34,8 @@ Inside the component, define the following list of actions. Each action has a sh
 | **Oil Painting** | "Transform this image into a classic oil painting style." |
 | **Surprise Me** | "Make a creative and random artistic change to this image." |
 
-### 3. Integrate into `ChatInterface`
-**File:** `src/components/ChatInterface.tsx`
-
-**Placement:**
--   Import the `QuickActions` component.
--   Place it **inside** the main chat container, immediately **above** the `<form>` (input area) and **below** the message list (or reference preview area).
--   Pass the `onSendMessage` function (or a wrapper around it) to the `onAction` prop.
-    -   *Note:* The `onAction` callback should trigger the message sending immediately, just like typing a message and hitting enter.
-
-## Implementation Steps
-1.  **Create** `src/components/QuickActions.tsx` with the defined props and UI.
-2.  **Define** the array of action objects (label + prompt) within the component.
-3.  **Map** over these actions to render the buttons.
-4.  **Open** `src/components/ChatInterface.tsx`.
-5.  **Insert** `<QuickActions />` above the input form.
-6.  **Connect** the `onAction` prop to `onSendMessage`. Ensure you handle the second argument of `onSendMessage` (which is `referenceImage` - you can pass `undefined` or the current `referenceImage` state if you want it to apply to the reference).
-
 ## Definition of Done
--   A row of chips appears above the chat input.
--   Clicking a chip immediately sends the corresponding prompt to the chat.
--   The buttons allow for horizontal scrolling if they don't fit.
--   The buttons are disabled when the chat is `isLoading`.
+*   A row of action chips appears in the chat interface.
+*   Clicking a chip immediately sends the corresponding prompt to the chat.
+*   The layout is responsive and handles overflow.
+*   The UI matches the existing design system.
