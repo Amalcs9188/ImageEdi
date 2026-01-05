@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, X, Paperclip, MessageSquare, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+import { Send, Image as ImageIcon, X, Paperclip, MessageSquare, ChevronDown, ChevronRight, Loader2, Sparkles, Mic, MicOff, Wand2 } from 'lucide-react';
 import { Message } from '../types';
 import { Button } from './Button';
 import { fileToBase64 } from '../utils';
 import { QuickActionsToolbar } from './QuickActionsToolbar';
+import { enhancePrompt } from '../services/geminiService';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -27,6 +28,52 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInputValue((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const handleEnhance = async () => {
+    if (!inputValue.trim() || isEnhancing) return;
+    setIsEnhancing(true);
+    try {
+      const enhanced = await enhancePrompt(inputValue);
+      setInputValue(enhanced);
+    } catch (error) {
+       console.error("Enhancement failed", error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,6 +83,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, isOpen]);
 
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 400)}px`;
+    }
+  }, [inputValue]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if ((!inputValue.trim() && !referenceImage) || isLoading) return;
@@ -43,6 +97,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     onSendMessage(inputValue, referenceImage || undefined);
     setInputValue('');
     setReferenceImage(null);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleReferenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,44 +292,101 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             )}
 
             {/* Input Form */}
-            <form onSubmit={handleSubmit} className="p-3 pt-0">
-              <div className="flex gap-2">
-                <input 
+            <form onSubmit={handleSubmit} className="p-4 pt-0 w-full max-w-4xl mx-auto">
+               {/* Hidden File Input */}
+               <input 
                   type="file" 
                   ref={referenceInputRef} 
                   className="hidden" 
                   accept="image/*" 
                   onChange={handleReferenceUpload}
                 />
-                <Button 
-                  type="button" 
-                  variant="secondary" 
-                  className="px-2.5" 
-                  onClick={() => referenceInputRef.current?.click()}
-                  title="Attach Reference Image"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </Button>
-                
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
+
+               {/* Main Input Container */}
+               <div className="relative flex flex-col bg-surface-elevated/50 border border-white/5 focus-within:bg-surface-elevated focus-within:border-primary/20 hover:border-white/10 rounded-[24px] transition-all shadow-lg overflow-hidden backdrop-blur-md">
+                  
+                  {/* Text Area */}
+                  <textarea
+                    ref={textareaRef}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Ask to..."
-                    className="w-full h-full bg-surface-highlight border border-border rounded-lg pl-3 pr-10 py-2 text-sm text-text placeholder-text-dim focus:outline-none focus:border-primary-light focus:ring-1 focus:ring-primary-light transition-all"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if ((inputValue.trim() || referenceImage) && !isLoading) {
+                           onSendMessage(inputValue, referenceImage || undefined);
+                           setInputValue('');
+                           setReferenceImage(null);
+                        }
+                      }
+                    }}
+                    placeholder="Ask ImageEdi to..."
+                    rows={1}
+                    className="w-full min-h-[44px] max-h-[400px] bg-transparent border-none py-3 pl-5 pr-4 text-[15px] text-text placeholder-text-dim/50 focus:ring-0 focus:outline-none resize-none scrollbar-hide leading-relaxed"
                     disabled={isLoading}
                   />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || (!inputValue.trim() && !referenceImage)}
-                  className="px-3"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+                  {/* Bottom Toolbar */}
+                  <div className="flex items-center justify-between px-3 pb-2">
+                    
+                    {/* Left Actions */}
+                    <div className="flex items-center gap-2">
+                      <button 
+                         type="button" 
+                         onClick={() => referenceInputRef.current?.click()}
+                         className="p-2 text-text-muted hover:text-text hover:bg-surface-highlight rounded-full transition-colors"
+                         title="Attach Reference Image"
+                      >
+                         <Paperclip className="w-5 h-5" />
+                      </button>
+
+                      {/* Enhance Button - appearing next to attach when needed */}
+                      {inputValue.trim().length > 2 && (
+                         <button
+                           type="button"
+                           onClick={handleEnhance}
+                           disabled={isEnhancing}
+                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-xs font-medium ${
+                               isEnhancing 
+                               ? 'bg-primary/20 text-primary animate-pulse'
+                               : 'bg-surface-highlight text-text-muted hover:text-primary hover:bg-surface-highlight/80'
+                           }`}
+                         >
+                           {isEnhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                           <span>Enhance</span>
+                         </button>
+                      )}
+                    </div>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center gap-3">
+                       <button
+                        type="button"
+                        onClick={toggleListening}
+                        className={`p-2 rounded-full transition-all ${
+                          isListening 
+                            ? 'bg-danger/20 text-danger animate-pulse' 
+                            : 'text-text-muted hover:text-text hover:bg-surface-highlight'
+                        }`}
+                        title={isListening ? "Stop Listening" : "Voice Input"}
+                      >
+                        {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                      </button>
+
+                       <button 
+                        type="submit" 
+                        disabled={isLoading || (!inputValue.trim() && !referenceImage)}
+                        className={`p-2 rounded-full transition-all flex items-center justify-center ${
+                           inputValue.trim() || referenceImage
+                           ? 'bg-primary text-white hover:bg-primary-hover shadow-md transform hover:scale-105'
+                           : 'text-text-dim cursor-not-allowed hover:bg-transparent'
+                        }`}
+                      >
+                        <Send className="w-5 h-5 ml-0.5" />
+                      </button>
+                    </div>
+
+                  </div>
+               </div>
             </form>
           </div>
         </div>

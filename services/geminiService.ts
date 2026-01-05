@@ -80,3 +80,31 @@ export const generateContent = async ({
     throw error;
   }
 };
+
+export const enhancePrompt = async (simplePrompt: string): Promise<string> => {
+   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    
+    // Using a model good at text logic
+    // Using a model good at text logic
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash-exp',
+      contents: {
+        parts: [{ text: `You are an AI image generation expert. Rewrite the following user prompt to be highly detailed, artistic, and improved for an image generator (like Flux or Midjourney). 
+        
+        Rules:
+        1. Keep the core intent.
+        2. Add details about lighting, texture, composition, and style.
+        3. Do NOT add preamble like "Here is the prompt". Just return the prompt text.
+        
+        User Prompt: "${simplePrompt}"` }]
+      }
+    });
+
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text ? text.trim() : simplePrompt;
+   } catch (error) {
+     console.error("Prompt Enhancement Failed", error);
+     return simplePrompt; // Fallback to original
+   }
+}
