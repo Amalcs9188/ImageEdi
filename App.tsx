@@ -4,7 +4,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { generateContent } from './services/geminiService';
 import { Message } from './types';
 
-import { Download, Share2, Trash2 } from 'lucide-react';
+import { Download, Share2, Trash2, Sparkles } from 'lucide-react';
 import { Button } from './components/Button';
 
 // Mock nanoid for simplicity 
@@ -19,6 +19,8 @@ function App() {
       text: "Welcome to ImageEdi! I'm powered by Gemini. Upload an image to start editing, or describe what you want to generate."
     }
   ]);
+  // Chat open state, default true
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = async (text: string, referenceImage?: string) => {
@@ -52,6 +54,10 @@ function App() {
       // If we got an image, update main canvas
       if (result.image) {
         setCurrentImage(result.image);
+        // On mobile, auto-close chat when a new image is generated so user can see it
+        if (window.innerWidth < 768) {
+           setIsChatOpen(false);
+        }
       }
 
       // Add model response message
@@ -124,12 +130,20 @@ function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 relative flex overflow-hidden">
-        {/* Canvas Area */}
-        <CanvasViewer 
-          imageUrl={currentImage} 
-          isLoading={isLoading}
-          onImageDrop={setCurrentImage}
-        />
+        {/* Canvas Area - Clicking here closes chat if open (on mobile mainly) */}
+        <div 
+          className="flex-1 relative h-full w-full"
+          onClick={() => {
+            // Close chat if open and screen is mobile, or general click-away behavior desired
+             if (isChatOpen && window.innerWidth < 768) setIsChatOpen(false);
+          }}
+        >
+          <CanvasViewer 
+            imageUrl={currentImage} 
+            isLoading={isLoading}
+            onImageDrop={setCurrentImage}
+          />
+        </div>
 
         {/* Floating Chat Interface */}
         <ChatInterface 
@@ -137,6 +151,8 @@ function App() {
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           onImageUpload={setCurrentImage}
+          isOpen={isChatOpen}
+          setIsOpen={setIsChatOpen}
         />
       </div>
     </div>

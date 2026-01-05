@@ -9,16 +9,19 @@ interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (text: string, referenceImage?: string) => void;
   isLoading: boolean;
-  onImageUpload: (base64: string) => void; // To set the main canvas image if user uploads directly
+  onImageUpload: (base64: string) => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   onSendMessage, 
   isLoading,
-  onImageUpload
+  onImageUpload,
+  isOpen,
+  setIsOpen
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
   const [inputValue, setInputValue] = useState('');
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,10 +83,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <>
       {/* Floating Toggle Button (Visible when closed) */}
       <div 
-        className={`absolute top-4 right-4 z-30 transition-all duration-300 ${isOpen ? 'opacity-0 pointer-events-none translate-x-10' : 'opacity-100 translate-x-0'}`}
+        className={`absolute top-4 right-4 z-50 transition-all duration-300 ${isOpen ? 'opacity-0 pointer-events-none translate-x-10' : 'opacity-100 translate-x-0'}`}
       >
         <button 
-          onClick={() => setIsOpen(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-text rounded-lg shadow-xl transition-transform hover:scale-105"
         >
           <MessageSquare className="w-5 h-5" />
@@ -94,11 +100,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Docked Sidebar Panel */}
       <div 
         className={`
-          relative h-full bg-surface border-l border-border shadow-2xl z-20 transition-[width] duration-300 ease-in-out flex flex-col shrink-0 overflow-hidden
-          ${isOpen ? 'w-[400px]' : 'w-0 border-l-0'}
+          fixed md:relative inset-y-0 right-0 h-full bg-surface border-l border-border shadow-2xl z-40 transition-[width] duration-300 ease-in-out flex flex-col shrink-0 overflow-hidden
+          ${isOpen ? 'w-full md:w-[400px]' : 'w-0 border-l-0'}
         `}
       >
-        <div className="w-[400px] h-full flex flex-col">
+        <div className="w-[100vw] md:w-[400px] h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-surface shrink-0">
             <div className="flex items-center gap-2">
@@ -166,12 +172,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   
                   {msg.text && <div className="whitespace-pre-wrap">{msg.text}</div>}
                   
-                  {msg.image && (
-                     <div className="mt-2 rounded-lg overflow-hidden border border-border-light">
-                       <img src={msg.image} alt="Generated result" className="w-full h-auto" />
-                       <div className="p-1 bg-surface/80 text-[10px] text-center text-text-muted">Generated Preview</div>
-                     </div>
-                  )}
+                     {msg.image && (
+                       <div 
+                         className="mt-2 rounded-lg overflow-hidden border border-border-light cursor-pointer active:scale-95 transition-transform"
+                         onClick={() => {
+                           if (window.innerWidth < 768) setIsOpen(false);
+                         }}
+                       >
+                         <img src={msg.image} alt="Generated result" className="w-full h-auto" />
+                         <div className="p-1 bg-surface/80 text-[10px] text-center text-text-muted">Generated Preview (Tap to View)</div>
+                       </div>
+                    )}
                 </div>
               </div>
             ))}
