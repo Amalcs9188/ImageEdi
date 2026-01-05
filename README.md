@@ -27,13 +27,16 @@ ImageEdi is a sleek, AI-powered image editor and generator built with React and 
     ```
 
 3.  **Environment Configuration**:
-    You must configure your API key. Create a `.env` file in the root directory:
-
+    Copy the example environment file to a local file:
+    ```bash
+    cp .env.example .env.local
+    ```
+    Then open `.env.local` and add your Google Gemini API key:
     ```env
-    API_KEY=your_google_gemini_api_key_here
+    GEMINI_API_KEY=your_actual_api_key_here
     ```
 
-    *Note: The application uses `process.env.API_KEY` to authenticate with the Google GenAI SDK.*
+    *Note: The application uses `GEMINI_API_KEY` to authenticate with the Google GenAI SDK.*
 
 4.  **Run the application**:
     ```bash
